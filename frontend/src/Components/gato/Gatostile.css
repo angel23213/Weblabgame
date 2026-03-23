@@ -1,0 +1,73 @@
+/* Gatostile.css */
+.gato-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.gato-board {
+  display: grid;
+  grid-template-columns: repeat(3, 100px);
+  grid-template-rows: repeat(3, 100px);
+  gap: 10px;
+  background-color: var(--border-color);
+  padding: 10px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px var(--shadow-color);
+}
+
+.gato-cell {
+  background-color: var(--panel-bg);
+  color: var(--text-primary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 4rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border-radius: 8px;
+}
+
+.gato-cell:hover:not(.filled) {
+  background-color: var(--bg-color);
+  transform: scale(1.05);
+}
+
+.gato-cell.disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.gato-cell.winner-cell {
+  background-color: var(--winner-bg);
+  color: var(--winner-text);
+  animation: glow 1.5s infinite alternate;
+}
+
+.status-info {
+  text-align: center;
+  font-size: 1.2rem;
+  background: var(--panel-bg);
+  padding: 1.5rem;
+  border-radius: 12px;
+  min-width: 300px;
+  box-shadow: 0 4px 15px var(--shadow-color);
+  border: 1px solid var(--border-color);
+}
+
+.turn-indicator p {
+  margin: 0.5rem 0;
+}
+
+.my-turn-alert {
+  color: var(--success-color);
+  font-weight: bold;
+  animation: pop-in 0.3s ease-out;
+}
+
+.waiting-alert {
+  color: var(--text-secondary);
+}

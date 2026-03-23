@@ -1,0 +1,132 @@
+/* Dashboard.css */
+.dashboard-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* El logo */
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.brand-logo img {
+  height: 60px;
+  filter: drop-shadow(0 0 10px var(--accent-color));
+  animation: glow 3s infinite;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.online {
+  background-color: var(--winner-bg);
+  color: var(--winner-text);
+  border: 1px solid var(--winner-text);
+}
+
+.offline {
+  background-color: var(--loser-bg);
+  color: var(--loser-text);
+  border: 1px solid var(--loser-text);
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.game-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.game-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent-color), var(--success-color));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.game-card:hover::before {
+  opacity: 1;
+}
+
+.game-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px var(--shadow-color);
+  border-color: var(--accent-color);
+}
+
+.game-icon {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 4px 6px var(--shadow-color));
+}
+
+.play-button {
+  background-color: var(--accent-color);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  font-weight: bold;
+  width: 100%;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 1rem;
+}
+
+.play-button:disabled {
+  background-color: var(--border-color);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+}
+
+.play-button:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.welcome-section {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.welcome-section p {
+  color: var(--text-secondary);
+  font-size: 1.2rem;
+}
