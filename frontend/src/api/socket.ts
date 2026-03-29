@@ -1,8 +1,8 @@
 import { io, Socket } from "socket.io-client";
 
-// La URL donde está corriendo tu servidor de Node.js
-// Si tu backend usa otro puerto, cámbialo aquí (ej. 4000)
-const URL = "http://localhost:3000";
+// La URL del servidor de Node.js viaja por variable o autoconfigura
+const customUrl = import.meta.env.VITE_SOCKET_URL;
+const URL = customUrl ? customUrl : `${window.location.protocol}//${window.location.hostname}:3000`;
 
 // Configuramos la instancia del socket
 export const socket: Socket = io(URL, {
