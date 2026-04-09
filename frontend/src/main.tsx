@@ -5,10 +5,17 @@ import App from './App.tsx'
 import { GameProvider } from './contexts/GameContext' // Importante
 import './index.css'
 
+import { AuthProvider } from './contexts/AuthContext'
+import { BrowserRouter } from 'react-router-dom'
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <GameProvider>
-      <App />
-    </GameProvider>
+    <AuthProvider>
+      <GameProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </GameProvider>
+    </AuthProvider>
   </React.StrictMode>,
 )

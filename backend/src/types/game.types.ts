@@ -1,4 +1,5 @@
 export type GameType = 'tic-tac-toe' | 'domino';
+export type GameMode = 'blitz' | 'daily';
 export type PlayerSymbol = 'X' | 'O'; // <-- Nuevo
 
 export interface Player {
@@ -35,7 +36,7 @@ export interface GameMove {
     gameId: string;
     playerId: string;
     gameType: GameType;
-    action: 'make-move' | 'play-tile' | 'draw-tile' | 'pass-turn'; // <-- 'make-move' añadido
+    action: 'make-move' | 'play-tile' | 'draw-tile' | 'pass-turn' | 'rematch-request' | 'surrender'; // <-- 'surrender' añadido
     payload: {
         position?: number;
         tile?: DominoPiece;
@@ -46,9 +47,13 @@ export interface GameMove {
 export interface GameState {
     gameId: string;
     gameType: GameType;
+    mode: GameMode;
     players: Player[];
     status: 'waiting' | 'playing' | 'finished';
     currentTurn: string;
     data: any; // Usamos 'any' temporalmente para facilitar la vida a tus compañeros en esta fase básica
     winnerId?: string;
+    rematchRequests?: string[]; // IDs de jugadores que pidieron revancha
+    timers?: Record<string, number>; // Tiempo restante por jugador en msg (modo blitz)
+    lastMoveTime?: number; // Cuándo inició el turno actual
 }

@@ -6,7 +6,8 @@ import { type GameState } from '../types/game.types';
 interface GameContextType {
   gameState: GameState | null;
   isConnected: boolean;
-  sendMove: (move: any) => void; // Luego afinaremos el tipo 'any'
+  sendMove: (move: any) => void;
+  leaveGame: (gameId: string) => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -16,24 +17,51 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isConnected, setIsConnected] = useState(socket.connected);
 
   useEffect(() => {
-    socket.connect();
-
-    // Escuchar cuando el estado del juego cambie en el servidor
-    socket.on('gameStateUpdate', (newState: GameState) => {
-      setGameState(newState);
-    });
-
-    socket.on('connect', () => {
+    // Si ya está conectado desde antes (ej. por React StrictMode)
+    if (socket.connected) {
       setIsConnected(true);
       socket.emit('reconnectUser', { playerId: getPlayerId() });
-    });
+    }
 
-    socket.on('disconnect', () => setIsConnected(false));
+    const onConnect = () => {
+      setIsConnected(true);
+      socket.emit('reconnectUser', { playerId: getPlayerId() });
+    };
+
+    const onDisconnect = () => {
+      setIsConnected(false);
+    };
+
+    const onGameStateUpdate = (newState: GameState) => {
+      setGameState(newState);
+    };
+
+    const onPlayerLeft = (gameId: string) => {
+      setGameState(prev => {
+        if (!prev || prev.gameId !== gameId) return prev;
+        // Marcamos al oponente como desconectado localmente para que la UI reaccione
+        return {
+          ...prev,
+          players: prev.players.map(p => ({
+            ...p,
+            disconnected: true
+          }))
+        };
+      });
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('gameStateUpdate', onGameStateUpdate);
+    socket.on('onPlayerLeft', onPlayerLeft);
+
+    socket.connect();
 
     return () => {
-      socket.off('gameStateUpdate');
-      socket.off('connect');
-      socket.off('disconnect');
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('gameStateUpdate', onGameStateUpdate);
+      socket.off('onPlayerLeft', onPlayerLeft);
     };
   }, []);
 
@@ -41,8 +69,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     socket.emit('makeMove', move);
   };
 
+  const leaveGame = (gameId: string) => {
+    socket.emit('leaveGame', { gameId });
+    setGameState(null);
+  };
+
   return (
-    <GameContext.Provider value={{ gameState, isConnected, sendMove }}>
+    <GameContext.Provider value={{ gameState, isConnected, sendMove, leaveGame }}>
       {children}
     </GameContext.Provider>
   );

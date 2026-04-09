@@ -1,49 +1,32 @@
 import { useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
-import { getPlayerId } from '../../api/socket';
+import { useAuth } from '../../contexts/AuthContext';
 import { type DominoState, type DominoPiece } from '../../types/game.types';
+import { TimerDisplay } from '../TimerDisplay';
+import { ConfirmationModal } from '../ConfirmationModal';
 import './DominoStyle.css';
 
 export const Domino = () => {
-    const { gameState, sendMove } = useGame();
+    const { gameState, sendMove, leaveGame } = useGame();
+    const { user } = useAuth();
     const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     // 1. Verificación básica
     if (!gameState || gameState.gameType !== 'domino') {
         return <div className="domino-container">Esperando conexión...</div>;
     }
 
-    // 2. Jugador
-    const myPlayer = gameState.players.find(p => p.id === getPlayerId());
+    const myPlayerId = user?.id.toString() || '';
+    const myPlayer = gameState.players.find(p => p.id === myPlayerId);
     const data = gameState.data as DominoState;
-    const isMyTurn = gameState.status === 'playing' && gameState.currentTurn === getPlayerId();
-
-    // Pantalla de espera interactiva
-    if (gameState.status === 'waiting') {
-        return (
-            <div className="domino-container">
-                <div className="info-panel">
-                    <h2>🕒 Esperando rival para el Dominó...</h2>
-                    <p>La partida comenzará pronto.</p>
-                </div>
-                <button onClick={() => window.location.reload()} className="restart-btn" style={{ marginTop: '20px' }}>
-                    Regresar al Lobby
-                </button>
-            </div>
-        );
-    }
-
-    const myHand = data.playerHands[getPlayerId() as string] || [];
-
-    // Contamos cuántas fichas tiene el oponente
-    const opponent = gameState.players.find(p => p.id !== getPlayerId());
-    const opponentHandCount = opponent ? (data.playerHands[opponent.id]?.length || 0) : 0;
+    const isMyTurn = gameState.status === 'playing' && gameState.currentTurn === myPlayerId;
 
     const handlePlayTile = (tileId: string, direction: 'left' | 'right') => {
         if (!isMyTurn) return;
         sendMove({
             gameId: gameState.gameId,
-            playerId: getPlayerId(),
+            playerId: myPlayerId,
             gameType: 'domino',
             action: 'play-tile',
             payload: { tileId, direction }
@@ -55,49 +38,196 @@ export const Domino = () => {
         if (!isMyTurn) return;
         sendMove({
             gameId: gameState.gameId,
-            playerId: getPlayerId(),
+            playerId: myPlayerId,
             gameType: 'domino',
             action: 'draw-tile',
             payload: {}
         });
     };
 
+    const handleExit = () => {
+        if (gameState.mode === 'blitz' && gameState.status === 'playing') {
+            setIsModalOpen(true);
+        } else {
+            leaveGame(gameState.gameId);
+        }
+    };
+
+    const confirmSurrender = () => {
+        sendMove({
+            gameId: gameState.gameId,
+            playerId: myPlayerId,
+            gameType: 'domino',
+            action: 'surrender',
+            payload: {}
+        });
+        setTimeout(() => {
+            leaveGame(gameState.gameId);
+        }, 500);
+    };
+
     const handlePass = () => {
         if (!isMyTurn) return;
         sendMove({
             gameId: gameState.gameId,
-            playerId: getPlayerId(),
+            playerId: myPlayerId,
             gameType: 'domino',
             action: 'pass-turn',
             payload: {}
         });
     };
 
+    // Pantalla de espera interactiva
+    if (gameState.status === 'waiting') {
+        return (
+            <div className="domino-container" style={{ margin: '20vh auto', textAlign: 'center' }}>
+                <ConfirmationModal 
+                    isOpen={isModalOpen}
+                    title="Confirmar Salida"
+                    message="Advertencia: si sales ahora perderás la partida."
+                    onConfirm={confirmSurrender}
+                    onCancel={() => setIsModalOpen(false)}
+                />
+                <h1 style={{ fontSize: '4rem', margin: '0', textShadow: '0 4px 10px var(--shadow-color)' }}>
+                    🕒 Esperando rival...
+                </h1>
+                <p style={{ fontSize: '1.5rem', color: 'var(--text-secondary)', marginTop: '10px' }}>
+                    La partida comenzará pronto.
+                </p>
+                <button 
+                    onClick={() => leaveGame(gameState.gameId)} 
+                    className="restart-btn" 
+                    style={{ marginTop: '40px', padding: '15px 40px', fontSize: '1.3rem' }}
+                >
+                    Regresar al Lobby
+                </button>
+            </div>
+        );
+    }
+
+    const myHand = data.playerHands[myPlayerId] || [];
+    const opponent = gameState.players.find(p => p.id !== myPlayerId);
+    const opponentHandCount = opponent ? (data.playerHands[opponent.id]?.length || 0) : 0;
+
     return (
-        <div className="domino-container">
-            <div className="info-panel">
-                <div>
-                    <h2>{gameState.status === 'finished' ? '🏁 Fin de Partida' : '🎲 Partida de Dominó'}</h2>
-                    <p><i>{data.message}</i></p>
-                    {opponent && <p>Fichas del oponente ({opponent.username}): <strong>{opponentHandCount}</strong></p>}
-                </div>
-                <div>
-                    <h3 style={{ color: isMyTurn ? '#d4edda' : '#ccc' }}>
-                        {isMyTurn ? '✨ ¡Es tu turno!' : '⏳ Esperando al oponente...'}
-                    </h3>
-                    <div className="action-buttons">
-                        <button onClick={handleDraw} disabled={!isMyTurn || data.boneyard.length === 0}>
-                            Robar ({data.boneyard.length})
-                        </button>
-                        <button onClick={handlePass} disabled={!isMyTurn || data.boneyard.length > 0}>
-                            Pasar
-                        </button>
+        <div className="domino-container" style={{ margin: '12vh auto 5vh auto', maxWidth: '1000px' }}>
+            <ConfirmationModal 
+                isOpen={isModalOpen}
+                title="Confirmar Salida"
+                message="Advertencia: si sales ahora perderás la partida."
+                onConfirm={confirmSurrender}
+                onCancel={() => setIsModalOpen(false)}
+            />
+
+            {/* Layout Simétrico */}
+            <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: gameState.status === 'playing' ? '150px 1fr 1fr 150px' : '1fr', 
+                alignItems: 'center', 
+                width: '100%', 
+                marginBottom: '40px',
+                padding: '0 20px',
+                gap: '10px'
+            }}>
+                
+                {gameState.status === 'playing' ? (
+                    <>
+                        {/* 1. Extremo Izquierdo: Botón Salir */}
+                        <div style={{ justifySelf: 'start' }}>
+                            <button 
+                                onClick={handleExit} 
+                                style={{ 
+                                    background: '#ff4a4a', 
+                                    color: 'white', 
+                                    padding: '12px 24px', 
+                                    borderRadius: '8px', 
+                                    border: 'none', 
+                                    cursor: 'pointer', 
+                                    fontWeight: 'bold',
+                                    fontSize: '1.1rem',
+                                    boxShadow: '0 4px 6px var(--shadow-color)'
+                                }}
+                            >
+                                {gameState.mode === 'daily' ? '💾 Salir' : '🚪 Salir'}
+                            </button>
+                        </div>
+
+                        {/* 2. Centro Izquierdo: Estado de Turno */}
+                        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <h2 style={{ fontSize: '1.6rem', color: isMyTurn ? 'var(--success-color)' : 'var(--text-secondary)', margin: '0', fontWeight: '800' }}>
+                                {isMyTurn ? '✨ ¡Es tu turno!' : '⏳ Esperando...'}
+                            </h2>
+                            {opponent && (
+                                <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', margin: '0' }}>
+                                    Rival: <strong>{opponentHandCount}</strong>
+                                </p>
+                            )}
+                        </div>
+
+                        {/* 3. Centro Derecho: Botones Robar y Pasar */}
+                        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <button 
+                                onClick={handleDraw} 
+                                disabled={!isMyTurn || data.boneyard.length === 0} 
+                                style={{ 
+                                    padding: '10px 25px', 
+                                    fontSize: '1rem', 
+                                    background: 'var(--accent-color)', 
+                                    color: 'white',
+                                    borderRadius: '6px',
+                                    fontWeight: 'bold',
+                                    opacity: (!isMyTurn || data.boneyard.length === 0) ? 0.5 : 1
+                                }}
+                            >
+                                Robar ({data.boneyard.length})
+                            </button>
+                            <button 
+                                onClick={handlePass} 
+                                disabled={!isMyTurn || data.boneyard.length > 0} 
+                                style={{ 
+                                    padding: '10px 25px', 
+                                    fontSize: '1rem', 
+                                    background: 'var(--text-secondary)', 
+                                    color: 'white',
+                                    borderRadius: '6px',
+                                    fontWeight: 'bold',
+                                    opacity: (!isMyTurn || data.boneyard.length > 0) ? 0.5 : 1
+                                }}
+                            >
+                                Pasar
+                            </button>
+                        </div>
+
+                        {/* 4. Extremo Derecho: Temporizador */}
+                        <div style={{ justifySelf: 'end' }}>
+                            <TimerDisplay gameState={gameState} playerId={myPlayerId} />
+                        </div>
+                    </>
+                ) : (
+                    /* Pantalla de Fin de Juego Centrada */
+                    <div style={{ textAlign: 'center', width: '100%' }}>
+                        <h2 style={{ fontSize: '3.5rem', margin: '0 0 10px 0', textShadow: '0 2px 4px var(--shadow-color)' }}>
+                            Fin del juego
+                        </h2>
+                        {gameState.winnerId ? (
+                            <h3 style={{ 
+                                fontSize: '2rem', 
+                                color: gameState.winnerId === myPlayer?.id ? 'var(--success-color)' : 'var(--danger-color)',
+                                margin: 0,
+                                fontWeight: 'bold'
+                            }}>
+                                {gameState.winnerId === myPlayer?.id ? '🏆 ¡Felicidades, has ganado!' : '💔 Mejor suerte la próxima.'}
+                            </h3>
+                        ) : (
+                            <h3 style={{ fontSize: '2rem', color: 'var(--draw-text)', margin: 0 }}>🤝 ¡Empate!</h3>
+                        )}
+                        <p style={{ marginTop: '10px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>{data.message}</p>
                     </div>
-                </div>
+                )}
             </div>
 
             <div className="domino-board">
-                {data.board.map((piece, i) => (
+                {data.board.map((piece: DominoPiece, i: number) => (
                     <div key={`board-${i}`} className="domino-tile horizontal">
                         <span>{piece.sideA}</span>
                         <div className="tile-separator"></div>
@@ -111,7 +241,7 @@ export const Domino = () => {
 
             <div className="player-hand-section" style={{ width: '100%', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
                 <h3 style={{ marginTop: '20px' }}>Tu Mano ({myHand.length})</h3>
-                <p style={{ fontSize: '0.8rem', color: '#666' }}>Haz clic en una ficha para seleccionar dónde jugarla</p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Haz clic en una ficha para seleccionar dónde jugarla</p>
 
                 <div className="player-hand" style={{ marginTop: '15px' }}>
                     {myHand.map((piece: DominoPiece) => {
@@ -130,7 +260,7 @@ export const Domino = () => {
                                 )}
                                 <div
                                     className="domino-tile"
-                                    style={{ border: isSelected ? '2px solid #3498db' : '2px solid #ccc' }}
+                                    style={{ border: isSelected ? '2px solid var(--accent-color)' : '2px solid var(--border-color)' }}
                                     onClick={() => setSelectedTileId(isSelected ? null : piece.id)}
                                 >
                                     <span>{piece.sideA}</span>
@@ -143,19 +273,26 @@ export const Domino = () => {
                 </div>
             </div>
 
+            {/* Botones de Final de Partida */}
             {gameState.status === 'finished' && (
-                <div className="result-overlay" style={{ marginTop: '30px', textAlign: 'center' }}>
-                    {gameState.winnerId ? (
-                        <h3 className={gameState.winnerId === myPlayer?.id ? "winner-msg" : "loser-msg"} style={{ color: gameState.winnerId === myPlayer?.id ? '#155724' : '#721c24' }}>
-                            {gameState.winnerId === myPlayer?.id
-                                ? '🏆 ¡Felicidades, has ganado el Dominó!'
-                                : '💔 Mejor suerte la próxima.'}
-                        </h3>
-                    ) : (
-                        <h3 className="draw-msg">🤝 La partida se ha bloqueado o empatado.</h3>
-                    )}
-                    <button onClick={() => window.location.reload()} className="restart-btn" style={{ padding: '10px 20px', fontSize: '1.2rem', marginTop: '15px' }}>
-                        Volver al Lobby
+                <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '40px' }}>
+                    <button onClick={() => leaveGame(gameState.gameId)} className="restart-btn" style={{ background: '#555', padding: '12px 24px', fontSize: '1.1rem' }}>
+                        Salir al Lobby
+                    </button>
+                    
+                    <button 
+                        className="restart-btn"
+                        disabled={gameState.rematchRequests?.includes(myPlayerId) || opponent?.disconnected}
+                        onClick={() => sendMove({ 
+                            gameId: gameState.gameId, 
+                            playerId: myPlayerId, 
+                            gameType: 'domino', 
+                            action: 'rematch-request', 
+                            payload: {} 
+                        })}
+                        style={{ padding: '12px 24px', fontSize: '1.1rem', background: (gameState.rematchRequests?.includes(myPlayerId) || opponent?.disconnected) ? '#666' : 'var(--accent-color)' }}
+                    >
+                        {opponent?.disconnected ? 'Rival salió 🚪' : (gameState.rematchRequests?.includes(myPlayerId) ? 'Esperando rival...' : '¡Revancha! 🔄')}
                     </button>
                 </div>
             )}
