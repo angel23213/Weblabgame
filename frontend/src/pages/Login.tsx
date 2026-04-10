@@ -36,6 +36,9 @@ export const Login: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        <div className="auth-logo-container">
+          <img src="/logo.png" alt="LabGame Logo" className="auth-logo" />
+        </div>
         <h2>Iniciar Sesión</h2>
         <p className="auth-subtitle">Ingresa para ver tu historial y jugar.</p>
         

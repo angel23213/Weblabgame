@@ -38,6 +38,9 @@ export const Register: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        <div className="auth-logo-container">
+          <img src="/logo.png" alt="LabGame Logo" className="auth-logo" />
+        </div>
         <h2>Crear Cuenta</h2>
         <p className="auth-subtitle">Únete para empezar a ganar.</p>
         
