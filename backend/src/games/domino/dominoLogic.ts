@@ -42,6 +42,31 @@ export const createInitialDominoState = (players: Player[]): DominoState => {
     };
 };
 
+/**
+ * Verifica si un jugador tiene alguna ficha que pueda jugar en el tablero actual.
+ */
+const hasPlayableTile = (hand: DominoPiece[], leftValue: number, rightValue: number): boolean => {
+    if (leftValue === -1) return true; // Si el tablero está vacío, todo es jugable
+    return hand.some(tile => 
+        tile.sideA === leftValue || tile.sideB === leftValue ||
+        tile.sideA === rightValue || tile.sideB === rightValue
+    );
+};
+
+/**
+ * Calcula el total de puntos en la mano de un jugador.
+ */
+export const calculateHandPoints = (hand: DominoPiece[]): number => {
+    return hand.reduce((sum, tile) => sum + tile.sideA + tile.sideB, 0);
+};
+
+/**
+ * Verifica si un jugador tiene movimientos posibles.
+ */
+export const hasMovesPossible = (hand: DominoPiece[], left: number, right: number): boolean => {
+    return hasPlayableTile(hand, left, right);
+};
+
 export const checkDominoWinner = (state: DominoState, players: Player[]): { winner: string | 'Draw' | null, reason?: string } => {
     // 1. Ganar por vaciar la mano
     for (const player of players) {
@@ -50,7 +75,10 @@ export const checkDominoWinner = (state: DominoState, players: Player[]): { winn
         }
     }
 
-    // 2. Comprobar si está bloqueado. (Para simplificar, el Game Manager llamará a checkBlocked)
+    if (state.boneyard.length > 0) {
+        return { winner: null };
+    }
+
     return { winner: null };
 };
 
@@ -127,15 +155,15 @@ export const makeDominoMove = (
         const drawn = newState.boneyard.pop()!;
         if (!newState.playerHands[playerId]) return { error: "Mano no encontrada." };
         newState.playerHands[playerId].push(drawn);
-        newState.message = "Robó una ficha.";
-        return newState; // Robar NO pasa el turno automáticamente en este modelo simple.
+        newState.message = "Robó una ficha. ¿Puedes jugar ahora?";
+        return newState;
 
     } else if (action === 'pass-turn') {
-        // En un juego completo, solo puedes pasar si no tienes jugada y el pozo está vacío
+        // Solo puede pasar si no hay fichas en el pozo
         if (newState.boneyard.length > 0) {
-            return { error: "Aún hay fichas para robar, no puedes pasar el turno sin intentar robar." };
+            return { error: "Aún hay fichas para robar." };
         }
-        newState.message = "Pasó el turno porque no podía jugar.";
+        newState.message = "Pasó el turno.";
         return newState;
     }
 

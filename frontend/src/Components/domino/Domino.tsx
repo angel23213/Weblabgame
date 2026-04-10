@@ -1,10 +1,20 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { type DominoState, type DominoPiece } from '../../types/game.types';
 import { TimerDisplay } from '../TimerDisplay';
 import { ConfirmationModal } from '../ConfirmationModal';
 import './DominoStyle.css';
+
+const DominoPieceView = memo(({ piece, isHorizontal }: { piece: DominoPiece, isHorizontal?: boolean }) => {
+    return (
+        <div className={`domino-tile ${isHorizontal ? 'horizontal' : ''}`}>
+            <span>{piece.sideA}</span>
+            <div className="tile-separator"></div>
+            <span>{piece.sideB}</span>
+        </div>
+    );
+});
 
 export const Domino = () => {
     const { gameState, sendMove, leaveGame } = useGame();
@@ -228,11 +238,7 @@ export const Domino = () => {
 
             <div className="domino-board">
                 {data.board.map((piece: DominoPiece, i: number) => (
-                    <div key={`board-${i}`} className="domino-tile horizontal">
-                        <span>{piece.sideA}</span>
-                        <div className="tile-separator"></div>
-                        <span>{piece.sideB}</span>
-                    </div>
+                    <DominoPieceView key={`${piece.id}-board-${i}`} piece={piece} isHorizontal />
                 ))}
                 {data.board.length === 0 && (
                     <p style={{ color: 'white', margin: 'auto' }}>El tablero está vacío. Juega cualquier ficha para empezar.</p>

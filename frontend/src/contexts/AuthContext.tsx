@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import axios from 'axios';
+import { BASE_URL } from '../api/socket';
 
 export interface User {
   id: number;
@@ -32,7 +33,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(JSON.parse(storedUser));
       
       // Refrescar las estadísticas desde el Backend
-      axios.get('http://localhost:3000/api/auth/me', {
+      axios.get(`${BASE_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${storedToken}` }
       })
       .then(res => {

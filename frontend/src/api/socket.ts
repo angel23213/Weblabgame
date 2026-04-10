@@ -2,10 +2,10 @@ import { io, Socket } from "socket.io-client";
 
 // La URL del servidor de Node.js viaja por variable o autoconfigura
 const customUrl = import.meta.env.VITE_SOCKET_URL;
-const URL = customUrl ? customUrl : `${window.location.protocol}//${window.location.hostname}:3000`;
+export const BASE_URL = customUrl ? customUrl : `${window.location.protocol}//${window.location.hostname}:3000`;
 
 // Configuramos la instancia del socket
-export const socket: Socket = io(URL, {
+export const socket: Socket = io(BASE_URL, {
     autoConnect: false, // No se conecta solo al cargar la página
     transports: ["websocket"], // Forzamos el uso de WebSockets para mayor velocidad
 });

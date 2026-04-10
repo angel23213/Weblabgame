@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { useAuth } from '../contexts/AuthContext';
-import { socket } from '../api/socket';
 import axios from 'axios';
+import { BASE_URL, socket } from '../api/socket';
 import { type GameState } from '../types/game.types';
 import './Dashboard.css';
 
@@ -50,7 +50,7 @@ export const Dashboard = () => {
   const fetchActiveGames = () => {
     const token = localStorage.getItem('token');
     if (user && token) {
-      axios.get('http://localhost:3000/api/auth/active-games', {
+      axios.get(`${BASE_URL}/api/auth/active-games`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       .then(res => setActiveGames(res.data))

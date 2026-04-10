@@ -1,6 +1,6 @@
 import { type GameState, type GameMove, type GameType, type PlayerSymbol, type GameMode } from '../types/game.types.js';
 import { createInitialGatoState, makeGatoMove, checkWinner } from '../games/gato/gatoLogic.js';
-import { createInitialDominoState, makeDominoMove, checkDominoWinner } from '../games/domino/dominoLogic.js';
+import { createInitialDominoState, makeDominoMove, checkDominoWinner, hasMovesPossible, calculateHandPoints } from '../games/domino/dominoLogic.js';
 import { saveNewGame, updateGameInDB, loadActiveDailyGames } from '../services/game.service.js';
 
 class GameManager {
@@ -294,6 +294,50 @@ class GameManager {
                 // Si la acción fue jugar o pasar, cambiamos el turno. (Robar no pasa el turno solo por robar).
                 if (move.action === 'play-tile' || move.action === 'pass-turn') {
                     const nextPlayer = game.players.find(p => p.id !== move.playerId);
+                    
+                    if (move.action === 'pass-turn') {
+                        // REGLA DE TRANCA: Si paso y el otro tampoco puede jugar y pozo vacío
+                        const dominoData = game.data as any;
+                        if (dominoData.boneyard.length === 0 && nextPlayer) {
+                            const canNextPlayerPlay = hasMovesPossible(
+                                dominoData.playerHands[nextPlayer.id] || [],
+                                dominoData.leftValue,
+                                dominoData.rightValue
+                            );
+
+                            if (!canNextPlayerPlay) {
+                                // ¡TRANCA DETECTADA! Ambos están bloqueados
+                                game.status = 'finished';
+                                
+                                const scores = game.players.map(p => ({
+                                    id: p.id,
+                                    count: dominoData.playerHands[p.id]?.length || 0,
+                                    points: calculateHandPoints(dominoData.playerHands[p.id] || [])
+                                }));
+
+                                const minCount = Math.min(...scores.map(s => s.count));
+                                const withMinCount = scores.filter(s => s.count === minCount);
+
+                                if (withMinCount.length === 1) {
+                                    game.winnerId = withMinCount[0].id;
+                                    game.data.message = "¡Tranca! Victoria por menos fichas.";
+                                } else {
+                                    const minPoints = Math.min(...withMinCount.map(s => s.points));
+                                    const withMinPoints = withMinCount.filter(s => s.points === minPoints);
+                                    if (withMinPoints.length === 1) {
+                                        game.winnerId = withMinPoints[0].id;
+                                        game.data.message = "¡Tranca! Victoria por menos puntos.";
+                                    } else {
+                                        game.data.message = "¡Tranca! Empate absoluto.";
+                                    }
+                                }
+
+                                if (this.onGameEnd) this.onGameEnd(game);
+                                return game;
+                            }
+                        }
+                    }
+
                     if (nextPlayer) {
                         game.currentTurn = nextPlayer.id;
                         game.lastMoveTime = Date.now();
