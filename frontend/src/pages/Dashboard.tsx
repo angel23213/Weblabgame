@@ -35,7 +35,7 @@ const DailyTimer = ({ lastMoveTime, isFinished }: { lastMoveTime?: number, isFin
 
 export const Dashboard = () => {
   const { isConnected } = useGame();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
 
   // Theme Toggle Logic
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
@@ -64,10 +64,16 @@ export const Dashboard = () => {
     // Re-sincronización Live
     if (user) {
         socket.emit("joinLobby", user.id.toString());
-        socket.on("dashboardUpdate", fetchActiveGames);
+        
+        const handleUpdate = () => {
+          fetchActiveGames();
+          refreshUser();
+        };
+
+        socket.on("dashboardUpdate", handleUpdate);
         
         return () => {
-            socket.off("dashboardUpdate", fetchActiveGames);
+            socket.off("dashboardUpdate", handleUpdate);
         }
     }
   }, [user]);

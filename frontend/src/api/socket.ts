@@ -1,13 +1,20 @@
 import { io, Socket } from "socket.io-client";
+import axios from "axios";
 
 // La URL del servidor de Node.js viaja por variable o autoconfigura
 const customUrl = import.meta.env.VITE_SOCKET_URL;
 export const BASE_URL = customUrl ? customUrl : `${window.location.protocol}//${window.location.hostname}:3000`;
 
+// Configuración global de Axios para saltar advertencia de ngrok
+axios.defaults.headers.common['ngrok-skip-browser-warning'] = 'true';
+
 // Configuramos la instancia del socket
 export const socket: Socket = io(BASE_URL, {
-    autoConnect: false, // No se conecta solo al cargar la página
-    transports: ["websocket"], // Forzamos el uso de WebSockets para mayor velocidad
+    autoConnect: false,
+    transports: ["websocket"],
+    extraHeaders: {
+        "ngrok-skip-browser-warning": "true"
+    }
 });
 
 // Opcional: Logs para saber qué pasa en la consola del navegador
